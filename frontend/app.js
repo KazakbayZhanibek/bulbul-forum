@@ -1,12 +1,9 @@
-// BULBUL FORUM — app.js
+// ═══════════════════════════════════════════════════════════════
+// BULBUL FORUM — app.js (полная перезапись)
+// ═══════════════════════════════════════════════════════════════
+
 // Auto-detect API URL: local vs deployed
-const API = (() => {
-  const h = window.location.hostname;
-  if (h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168')) {
-    return 'http://localhost:8000';
-  }
-  return 'https://bulbul-forum-production.up.railway.app';
-})();
+const API = 'https://bulbul-forum-production.up.railway.app';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentView = 'list';
@@ -1820,5 +1817,4 @@ async function showTagFeed() {
 // Load tag subs on init if logged in
 document.addEventListener('DOMContentLoaded', () => {
   if (getToken()) loadMyTagSubs();
-});
 });

@@ -10,7 +10,7 @@ const API = (() => {
     return 'http://localhost:8000';
   }
   // Replace with your Railway URL after deploy
-  return window._FORUM_API || 'https://YOUR-RAILWAY-URL.up.railway.app';
+  return window._FORUM_API || 'https://bulbul-forum-production.up.railway.app';
 })();
 =======
 const API = 'https://bulbul-forum-production.up.railway.app';

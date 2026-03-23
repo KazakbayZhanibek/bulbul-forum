@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)"/>
+<meta name="theme-color" content="#f8f7f4" media="(prefers-color-scheme: light)"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>Bulbul Forum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+<meta name="description" content="Bulbul Forum"/>
+<link rel="manifest" href="manifest.json"/>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="#" onclick="showList()">
+      <span class="logo-text">Bulbul</span>
+      <span class="logo-mark">◆</span>
+      <span class="logo-text">Forum</span>
+    </a>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="filterCat(this,'all')">Все</button>
+      <button class="nav-btn" id="tagFeedBtn" onclick="showTagFeed()" style="display:none">Моя лента</button>
+      <button class="nav-btn" onclick="filterCat(this,'general')">Общее</button>
+      <button class="nav-btn" onclick="filterCat(this,'design')">Дизайн</button>
+      <button class="nav-btn" onclick="filterCat(this,'tech')">Техно</button>
+    </nav>
+    <div class="header-actions">
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" placeholder="Поиск…" oninput="debounceSearch(this.value)"/>
+        <span class="search-icon">⌕</span>
+      </div>
+      <button class="theme-btn" onclick="toggleTheme()" title="Тема">◐</button>
+      <button id="installBtn" class="theme-btn" onclick="installPWA()" title="Установить">⊕</button>
+      <div id="authArea"></div>
+    </div>
+  </div>
+</header>
+
+<main class="main" id="mainContent">
+  <div class="stats-bar" id="statsBar">
+    <span><span class="stat-num" id="statPosts">—</span> постов</span>
+    <span class="stat-dot">·</span>
+    <span><span class="stat-num" id="statComments">—</span> комментариев</span>
+    <span class="stat-dot">·</span>
+    <span><span class="stat-num" id="statMembers">—</span> участников</span>
+    <span class="stat-dot">·</span>
+    <span><span class="online-dot"></span><span class="stat-num" id="statOnline">0</span> онлайн</span>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div id="tagsCloud"></div>
+    <div class="posts-list" id="postsList"></div>
+    <div class="empty-state" id="emptyState" style="display:none"><p>Ничего не найдено</p></div>
+    <div id="pagination"></div>
+  </div>
+
+  <!-- POST VIEW -->
+  <div id="postView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <article class="post-full" id="postFull"></article>
+    <section class="comments-section">
+      <h3 class="comments-title" id="commentsTitle">Комментарии</h3>
+      <div class="comments-list" id="commentsList"></div>
+      <div id="commentFormWrap"></div>
+    </section>
+  </div>
+
+  <!-- PROFILE VIEW -->
+  <div id="profileView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <div id="profileContent"></div>
+  </div>
+
+  <!-- USERS VIEW -->
+  <div id="usersView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Поиск пользователей</h2>
+    <div class="search-wrap" style="margin-bottom:24px;max-width:400px">
+      <input class="search-input" style="width:100%;padding-left:32px" id="userSearchInput" placeholder="Введите имя…" oninput="debounceUserSearch(this.value)"/>
+      <span class="search-icon">⌕</span>
+    </div>
+    <div id="usersList"></div>
+  </div>
+
+  <!-- NOTIF VIEW -->
+  <div id="notifView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Уведомления</h2>
+    <div id="notifList"></div>
+  </div>
+
+  <!-- FEED VIEW -->
+  <div id="feedView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Лента подписок</h2>
+    <div class="posts-list" id="feedList"></div>
+  </div>
+
+  <!-- BOOKMARKS VIEW -->
+  <div id="bookmarksView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Закладки</h2>
+    <div class="posts-list" id="bookmarksList"></div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="historyView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">История</h2>
+    <div class="posts-list" id="historyList"></div>
+  </div>
+
+  <!-- TRENDING VIEW -->
+  <div id="trendingView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Trending</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Популярные посты за неделю</p>
+    <div class="posts-list" id="trendingList"></div>
+  </div>
+
+  <!-- SEARCH VIEW -->
+  <div id="searchView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Поиск</h2>
+    <div class="search-wrap" style="margin-bottom:24px;max-width:500px">
+      <input class="search-input" style="width:100%;padding-left:32px" id="globalSearchInput" placeholder="Посты, пользователи, теги…" oninput="debounceGlobalSearch(this.value)"/>
+      <span class="search-icon">⌕</span>
+    </div>
+    <div id="globalSearchResults"></div>
+  </div>
+
+  <!-- MESSAGES VIEW -->
+  <div id="messagesView" style="display:none">
+    <button class="back-btn" onclick="showList()">← Назад</button>
+    <h2 class="section-title">Сообщения</h2>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="new-chat-btn" style="flex:1" onclick="showUsersView()">Написать</button>
+      <button class="new-chat-btn" style="flex:1" onclick="openCreateGroupModal()">Группа</button>
+    </div>
+    <div id="conversationsList"></div>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div id="chatView" style="display:none">
+    <div class="chat-header">
+      <button class="back-btn" style="margin:0;padding:0" onclick="showMessagesView();clearInterval(chatPollInterval);chatPollInterval=null;">← Назад</button>
+      <div class="chat-header-avatar" id="chatHeaderAvatar">?</div>
+      <div style="flex:1">
+        <div class="chat-header-name" id="chatTitle"></div>
+        <div class="chat-header-status">
+          <div id="chatHeaderStatus" style="font-size:11px;color:var(--cat-general);margin-bottom:2px"></div>
+          <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span>печатает…</span>
+          </div>
+        </div>
+      </div>
+      <button class="action-btn" style="padding:5px 10px;font-size:12px" onclick="document.getElementById('chatSearchWrap').classList.toggle('visible')">🔍</button>
+    </div>
+    <div class="chat-search-wrap" id="chatSearchWrap">
+      <input class="input" id="chatSearchInput" placeholder="Поиск в переписке…"/>
+    </div>
+    <div class="pinned-msg-block" id="pinnedMsgBlock" style="display:none">
+      <span style="font-size:11px;color:var(--cat-general);font-weight:600;letter-spacing:.04em;text-transform:uppercase;flex-shrink:0">PIN</span>
+      <div class="pinned-msg-content" id="pinnedMsgContent"></div>
+    </div>
+    <input type="hidden" id="chatWith"/>
+    <input type="hidden" id="chatGroupId"/>
+    <div class="chat-window">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-wrap" style="position:relative">
+        <div class="emoji-picker-panel" id="emojiPickerPanel" style="display:none">
+          <div class="emoji-picker-header">
+            <input class="emoji-search" placeholder="Поиск смайлика…" oninput="renderEmojiPicker(this.value)" onclick="event.stopPropagation()">
+          </div>
+          <div class="emoji-picker-grid" id="emojiPickerGrid"></div>
+        </div>
+        <form class="chat-input-row" onsubmit="sendMessage(event)">
+          <button type="button" class="emoji-trigger-btn" onclick="toggleEmojiPicker()">😊</button>
+          <input class="input" id="chatInput" placeholder="Напишите сообщение…" autocomplete="off"/>
+          <button class="chat-send-btn" type="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL: AUTH -->
+<div class="modal-overlay" id="authModal" onclick="hideModalClick(event,'authModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="authTitle">Вход</h2>
+      <button class="modal-close" onclick="closeModal('authModal')">✕</button>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Вход</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">Регистрация</button>
+    </div>
+    <form onsubmit="submitAuth(event)">
+      <div class="form-group">
+        <label class="label">Имя пользователя</label>
+        <input class="input" id="authUsername" placeholder="nickname" required/>
+      </div>
+      <div class="form-group">
+        <label class="label">Пароль</label>
+        <input class="input" type="password" id="authPassword" placeholder="••••••" required/>
+      </div>
+      <p class="auth-error" id="authError"></p>
+      <button class="btn-submit" type="submit" id="authSubmit">Войти</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: NEW POST -->
+<div class="modal-overlay" id="postModal" onclick="hideModalClick(event,'postModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Новый пост</h2>
+      <button class="modal-close" onclick="closeModal('postModal')">✕</button>
+    </div>
+    <form onsubmit="submitPost(event)">
+      <div class="form-group">
+        <label class="label">Заголовок</label>
+        <input class="input" id="newTitle" placeholder="О чём будет пост?" required/>
+      </div>
+      <div class="form-group">
+        <label class="label">Категория</label>
+        <select class="input" id="newCategory">
+          <option value="general">Общее</option>
+          <option value="design">Дизайн</option>
+          <option value="tech">Технологии</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="label">Теги (через запятую)</label>
+        <input class="input" id="newTags" placeholder="python, дизайн, вопрос"/>
+      </div>
+      <div class="form-group">
+        <label class="label">Изображение</label>
+        <div class="image-tabs">
+          <button type="button" class="image-tab active" data-prefix="post" onclick="switchImgTab('post','url',this)">По ссылке</button>
+          <button type="button" class="image-tab" data-prefix="post" onclick="switchImgTab('post','file',this)">Загрузить</button>
+        </div>
+        <div id="imgtab-url-post">
+          <input type="url" class="input" id="imgurl-post" placeholder="https://…" style="font-size:13px;padding:8px 12px"/>
+        </div>
+        <div id="imgtab-file-post" style="display:none">
+          <div class="image-upload-area" onclick="document.getElementById('imgfile-post').click()">
+            <input type="file" id="imgfile-post" accept="image/*" style="display:none" onchange="previewFile('post',this)"/>
+            <div class="image-upload-label">Нажмите чтобы выбрать</div>
+          </div>
+          <div id="imgpreview-post" class="image-preview" style="display:none">
+            <img id="imgpreviewimg-post" src="" alt=""/>
+            <button type="button" class="image-preview-remove" onclick="removePreview('post')">✕</button>
+          </div>
+        </div>
+        <input type="hidden" id="imgDataPost"/>
+      </div>
+      <div class="form-group">
+        <label class="label">Текст <span style="font-size:11px;color:var(--muted);text-transform:none;font-weight:400">**жирный** *курсив* `код`</span></label>
+        <textarea class="textarea" id="newBody" rows="5" placeholder="Расскажите подробнее…" required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="label">Опрос (необязательно)</label>
+        <input class="input" id="pollQuestion" placeholder="Вопрос…" style="margin-bottom:8px"/>
+        <input class="input" id="pollOpt1" placeholder="Вариант 1" style="margin-bottom:6px"/>
+        <input class="input" id="pollOpt2" placeholder="Вариант 2" style="margin-bottom:6px"/>
+        <input class="input" id="pollOpt3" placeholder="Вариант 3 (необяз.)"/>
+      </div>
+      <button class="btn-submit" type="submit">Опубликовать</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: EDIT POST -->
+<div class="modal-overlay" id="editModal" onclick="hideModalClick(event,'editModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Редактировать пост</h2>
+      <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+    </div>
+    <form onsubmit="submitEdit(event)">
+      <div class="form-group"><label class="label">Заголовок</label><input class="input" id="editTitle" required/></div>
+      <div class="form-group">
+        <label class="label">Категория</label>
+        <select class="input" id="editCategory">
+          <option value="general">Общее</option>
+          <option value="design">Дизайн</option>
+          <option value="tech">Технологии</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="label">Теги</label><input class="input" id="editTags"/></div>
+      <div class="form-group">
+        <label class="label">Изображение</label>
+        <div class="image-tabs">
+          <button type="button" class="image-tab active" data-prefix="editpost" onclick="switchImgTab('editpost','url',this)">По ссылке</button>
+          <button type="button" class="image-tab" data-prefix="editpost" onclick="switchImgTab('editpost','file',this)">Загрузить</button>
+        </div>
+        <div id="imgtab-url-editpost"><input type="url" class="input" id="imgurl-editpost" placeholder="https://…" style="font-size:13px;padding:8px 12px"/></div>
+        <div id="imgtab-file-editpost" style="display:none">
+          <div class="image-upload-area" onclick="document.getElementById('imgfile-editpost').click()">
+            <input type="file" id="imgfile-editpost" accept="image/*" style="display:none" onchange="previewFile('editpost',this)"/>
+            <div class="image-upload-label">Нажмите чтобы выбрать</div>
+          </div>
+          <div id="imgpreview-editpost" class="image-preview" style="display:none">
+            <img id="imgpreviewimg-editpost" src="" alt=""/>
+            <button type="button" class="image-preview-remove" onclick="removePreview('editpost')">✕</button>
+          </div>
+        </div>
+        <input type="hidden" id="imgDataEditpost"/>
+      </div>
+      <div class="form-group"><label class="label">Текст</label><textarea class="textarea" id="editBody" rows="5" required></textarea></div>
+      <button class="btn-submit" type="submit">Сохранить</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: PROFILE -->
+<div class="modal-overlay" id="profileModal" onclick="hideModalClick(event,'profileModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Редактировать профиль</h2>
+      <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+    </div>
+    <form onsubmit="submitProfile(event)">
+      <div class="form-group">
+        <label class="label">Фото</label>
+        <div class="image-upload-area" onclick="document.getElementById('avatarFile').click()" style="padding:14px">
+          <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="previewAvatarFile(this)"/>
+          <div class="image-upload-label">Нажмите чтобы выбрать фото</div>
+        </div>
+        <div id="avatarFilePreview" style="display:none;margin-top:8px;display:flex;align-items:center;gap:10px">
+          <img id="avatarFilePreviewImg" src="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid var(--border)"/>
+          <button type="button" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px" onclick="removeAvatarPreview()">Удалить</button>
+        </div>
+        <input type="hidden" id="avatarData"/>
+      </div>
+      <div class="form-group">
+        <label class="label">Или эмодзи</label>
+        <input class="input" id="profileAvatarEmoji" placeholder="🦊" maxlength="4"/>
+      </div>
+      <div class="form-group">
+        <label class="label">О себе</label>
+        <textarea class="textarea" id="profileBio" rows="3" placeholder="Расскажите о себе…"></textarea>
+      </div>
+      <button class="btn-submit" type="submit">Сохранить</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: CREATE GROUP -->
+<div class="modal-overlay" id="createGroupModal" onclick="hideModalClick(event,'createGroupModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Создать группу</h2>
+      <button class="modal-close" onclick="closeModal('createGroupModal')">✕</button>
+    </div>
+    <form onsubmit="submitCreateGroup(event)">
+      <div class="form-group"><label class="label">Название</label><input class="input" id="groupName" placeholder="Название группы…" required/></div>
+      <div class="form-group"><label class="label">Участники (через запятую)</label><input class="input" id="groupMembers" placeholder="username1, username2…"/></div>
+      <button class="btn-submit" type="submit">Создать</button>
+    </form>
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-btn active" id="mbn-home" onclick="showList();setMobileNav('home')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Главная</span>
+  </button>
+  <button class="mobile-nav-btn" id="mbn-search" onclick="showGlobalSearch();setMobileNav('search')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Поиск</span>
+  </button>
+  <button class="mobile-nav-btn" id="mbn-post" onclick="getUser()&&openModal('postModal')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span>Пост</span>
+  </button>
+  <button class="mobile-nav-btn" id="mbn-msgs" onclick="getUser()&&(showMessagesView(),setMobileNav('msgs'))">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Чат</span>
+  </button>
+  <button class="mobile-nav-btn" id="mbn-profile" onclick="getUser()&&(openMyProfile(),setMobileNav('profile'))">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Профиль</span>
+  </button>
+</nav>
+
+<script src="app.js"></script>
+
+<footer class="site-footer-forum">
+  <div class="footer-forum-inner">
+    <div>
+      <div style="font-family:var(--font-display);font-size:18px;font-weight:400;margin-bottom:8px">Bulbul <span style="font-size:10px;color:var(--muted)">◆</span> Corp</div>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.6;max-width:220px">Медиаплатформа нового поколения — новости, обсуждения, сообщество.</p>
+    </div>
+    <div class="footer-forum-links">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Продукты</div>
+      <a href="http://127.0.0.1:5501/frontend/news.html" style="display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:7px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">Bulbul News</a>
+      <a onclick="showList()" style="display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:7px;cursor:pointer">Bulbul Forum</a>
+    </div>
+    <div class="footer-forum-links">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Компания</div>
+      <a href="#" onclick="document.getElementById('footer-modal-forum').style.display='flex';return false" style="display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:7px">О нас</a>
+      <a href="#" onclick="document.getElementById('footer-modal-priv').style.display='flex';return false" style="display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:7px">Конфиденциальность</a>
+      <a href="#" onclick="document.getElementById('footer-modal-terms').style.display='flex';return false" style="display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:7px">Соглашение</a>
+    </div>
+    <div class="footer-forum-links">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Контакты</div>
+      <a href="/cdn-cgi/l/email-protection#97fdf6f9fef5f2fcfcf6eda4d7f0faf6fefbb9f4f8fa" style="display:block;font-size:13px;color:var(--text2);text-decoration:none;margin-bottom:7px"><span class="__cf_email__" data-cfemail="81ebe0efe8e3e4eaeae0fbb2c1e6ece0e8edafe2eeec">[email&#160;protected]</span></a>
+      <p style="font-size:12px;color:var(--muted);line-height:1.55">Сотрудничество, реклама, вопросы — пишите на почту.</p>
+    </div>
+  </div>
+  <div class="footer-forum-bottom">
+    <span>© 2025 Bulbul Corp</span>
+    <div style="display:flex;gap:14px">
+      <a href="/cdn-cgi/l/email-protection#79131817101b1c121218034a391e14181015571a1614" style="color:var(--muted);text-decoration:none;font-size:12px">Написать нам</a>
+      <a href="http://127.0.0.1:5501/frontend/news.html" style="color:var(--muted);text-decoration:none;font-size:12px">Bulbul News</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Forum footer modals -->
+<div id="footer-modal-forum" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);z-index:500;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:520px;width:100%;position:relative;animation:fadeUp .2s ease">
+    <button onclick="this.parentElement.parentElement.style.display='none'" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">✕</button>
+    <h2 style="font-family:var(--font-display);font-size:24px;font-weight:400;margin-bottom:18px">О Bulbul Corp</h2>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px">Bulbul Corp — независимая медиакомпания, созданная чтобы сделать качественную журналистику доступной и обсуждаемой.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px">Наши продукты: <strong style="color:var(--text)">Bulbul News</strong> — агрегатор новостей из ведущих казахстанских и международных источников, и <strong style="color:var(--text)">Bulbul Forum</strong> — площадка для обсуждений и дискуссий.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">Миссия:</strong> информировать, объединять и давать голос каждому. По вопросам: <a href="/cdn-cgi/l/email-protection#f79d96999e95929c9c968dc4b7909a969e9bd994989a" style="color:var(--cat-general)"><span class="__cf_email__" data-cfemail="4228232c2b2027292923387102252f232b2e6c212d2f">[email&#160;protected]</span></a></p>
+  </div>
+</div>
+<div id="footer-modal-priv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);z-index:500;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;position:relative">
+    <button onclick="this.parentElement.parentElement.style.display='none'" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">✕</button>
+    <h2 style="font-family:var(--font-display);font-size:24px;font-weight:400;margin-bottom:18px">Конфиденциальность</h2>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px"><strong style="color:var(--text)">Данные аккаунта.</strong> Хранятся имя пользователя, хэш пароля (bcrypt) и контент который вы публикуете. Пароли не хранятся в открытом виде.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px"><strong style="color:var(--text)">Локальные данные.</strong> Настройки темы и токен авторизации хранятся в localStorage вашего браузера на вашем устройстве.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px"><strong style="color:var(--text)">Третьи стороны.</strong> Мы не передаём ваши данные третьим сторонам и не используем рекламные трекеры.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7">Вопросы: <a href="/cdn-cgi/l/email-protection#5c363d32353e3937373d266f1c3b313d3530723f3331" style="color:var(--cat-general)"><span class="__cf_email__" data-cfemail="e288838c8b808789898398d1a2858f838b8ecc818d8f">[email&#160;protected]</span></a></p>
+  </div>
+</div>
+<div id="footer-modal-terms" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);z-index:500;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;position:relative">
+    <button onclick="this.parentElement.parentElement.style.display='none'" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">✕</button>
+    <h2 style="font-family:var(--font-display);font-size:24px;font-weight:400;margin-bottom:18px">Пользовательское соглашение</h2>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px"><strong style="color:var(--text)">Правила поведения.</strong> Запрещается оскорблять других пользователей, распространять дезинформацию, спам и контент нарушающий законодательство.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px"><strong style="color:var(--text)">Контент.</strong> Публикуя материалы, вы подтверждаете что имеете право на их размещение. Администрация вправе удалять нарушающий правила контент.</p>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px"><strong style="color:var(--text)"

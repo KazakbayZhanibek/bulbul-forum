@@ -153,7 +153,7 @@ def init_db():
     except: pass
     cur.execute("SELECT 1 FROM users WHERE username='admin'")
     if not cur.fetchone():
-        cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)",
+        cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?)",
             (str(uuid.uuid4())[:8],"admin",pwd_ctx.hash("admin123"),"admin","Администратор форума","",datetime.now().isoformat()))
         conn.commit()
 

@@ -1,20 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-// BULBUL FORUM — app.js (полная перезапись)
-// ═══════════════════════════════════════════════════════════════
-
+// BULBUL FORUM — app.js
 // Auto-detect API URL: local vs deployed
-<<<<<<< HEAD
 const API = (() => {
   const h = window.location.hostname;
   if (h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168')) {
     return 'http://localhost:8000';
   }
-  // Replace with your Railway URL after deploy
-  return window._FORUM_API || 'https://bulbul-forum-production.up.railway.app';
+  return 'https://bulbul-forum-production.up.railway.app';
 })();
-=======
-const API = 'https://bulbul-forum-production.up.railway.app';
->>>>>>> 665620447bea489bbcef07263de9b5ca34658176
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentView = 'list';
@@ -1828,8 +1820,5 @@ async function showTagFeed() {
 // Load tag subs on init if logged in
 document.addEventListener('DOMContentLoaded', () => {
   if (getToken()) loadMyTagSubs();
-<<<<<<< HEAD
 });
-=======
 });
->>>>>>> 665620447bea489bbcef07263de9b5ca34658176

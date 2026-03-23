@@ -154,7 +154,7 @@ def init_db():
     cur.execute("SELECT 1 FROM users WHERE username='admin'")
     if not cur.fetchone():
         cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?)",
-            (str(uuid.uuid4())[:8],"admin",pwd_ctx.hash("admin123"),"admin","Администратор форума","",datetime.now().isoformat()))
+            (str(uuid.uuid4())[:8],"admin",pwd_ctx.hash("admin123"),"admin", "Администратор форума", "", datetime.now().isoformat(), 0, 1))
         conn.commit()
 
     cur.execute("SELECT 1 FROM posts LIMIT 1")
@@ -264,8 +264,8 @@ def register(data: RegisterData):
     cur.execute("SELECT 1 FROM users WHERE username=?",(data.username,))
     if cur.fetchone(): cur.close(); conn.close(); raise HTTPException(400,"Имя уже занято")
     uid=str(uuid.uuid4())[:8]
-    cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)",
-        (uid,data.username,pwd_ctx.hash(data.password),"user","","",datetime.now().isoformat()))
+    cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?)",
+        (uid,data.username,pwd_ctx.hash(data.password),"user","","",datetime.now().isoformat(), 0, 1))
     conn.commit(); cur.close(); conn.close()
     return {"access_token":make_token(uid,data.username,"user"),"token_type":"bearer","username":data.username,"role":"user"}
 

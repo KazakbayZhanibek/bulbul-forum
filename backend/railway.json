@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 {
   "build": {
     "builder": "NIXPACKS"
@@ -9,14 +8,3 @@
     "restartPolicyType": "ON_FAILURE"
   }
 }
-=======
-{
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT",
-    "restartPolicyType": "ON_FAILURE"
-  }
-}
->>>>>>> 665620447bea489bbcef07263de9b5ca34658176

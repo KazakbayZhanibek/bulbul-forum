@@ -3,14 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 // Auto-detect API URL: local vs deployed
-const API = (() => {
-  const h = window.location.hostname;
-  if (h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168')) {
-    return 'http://localhost:8000';
-  }
-  // Replace with your Railway URL after deploy
-  return window._FORUM_API || 'https://YOUR-RAILWAY-URL.up.railway.app';
-})();
+const API = 'https://bulbul-forum-production.up.railway.app';
 
 // ─── STATE ─────────────────────────────────────────────────────
 let currentView = 'list';

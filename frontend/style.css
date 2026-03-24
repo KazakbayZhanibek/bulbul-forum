@@ -234,7 +234,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-si
 .input:focus,.textarea:focus{border-color:var(--border-hi);background:var(--surface)}
 .textarea{resize:vertical;min-height:90px;line-height:1.55}
 select.input option{background:var(--surface)}
-.btn-submit{background:var(--text);color:var(--bg);border:none;font-family:var(--font-body);font-size:14px;font-weight:500;padding:11px 24px;border-radius:var(--r);cursor:pointer;transition:opacity .15s,transform .1s;align-self:flex-start}
+.btn-submit{background:var(--text);color:var(--bg);border:none;font-family:var(--font-body);font-size:14px;font-weight:500;padding:11px 24px;border-radius:var(--r);cursor:pointer;transition:opacity .15s,transform .1s;align-self: stretch;}
 .btn-submit:hover{opacity:.85}
 .btn-submit:active{transform:scale(.98)}
 .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
@@ -452,6 +452,7 @@ select.input option{background:var(--surface)}
   .msg-act-panel{top:-38px}
   .user-dropdown{right:-8px;min-width:175px}
   .section-title{font-size:22px}
+  .btn-submit { width: 100%; }
 }
 
 /* ─── MOBILE BOTTOM NAV ──────────────────────────────────────── */

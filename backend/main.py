@@ -18,7 +18,7 @@ TOKEN_EXPIRE_HOURS = 24 * 7
 PAGE_SIZE = 10
 # На деплое база хранится в /data/forum.db (Railway volume)
 # Локально — в домашней папке
-DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser("~"), "forum.db"))
+DB_PATH = os.environ.get("DB_PATH", "/app/data/forum.db")
 
 online_users = {}
 ONLINE_TIMEOUT = 120

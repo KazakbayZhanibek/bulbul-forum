@@ -1294,7 +1294,10 @@ mark{background:rgba(155,181,200,.3);border-radius:2px;color:inherit}
 
   /* Chat */
   .chat-header { padding: 10px 0 10px; }
-  .chat-window { height: calc(100svh - 190px) !important; max-height: none; }
+  .chat-window { height: calc(100svh - 185px) !important; max-height: none; }
+  /* Скрыть footer в чате на мобиле */
+  .view-messages .site-footer-forum,
+  .view-chat .site-footer-forum { display: none !important; }
   .chat-bubble { font-size: 14px; padding: 10px 13px; max-width: 78vw; }
   .chat-msg-body { max-width: 82vw; }
   .chat-input-wrap { padding-top: 8px; }
@@ -1325,4 +1328,8 @@ mark{background:rgba(155,181,200,.3);border-radius:2px;color:inherit}
   .post-title { font-size: 15px; }
   .action-btn { padding: 7px 10px; font-size: 12px; }
   .card-like-btn { padding: 4px 9px; font-size: 12px; }
+}
+
+@media(max-width:640px) {
+  .site-footer-forum { display: none; }
 }

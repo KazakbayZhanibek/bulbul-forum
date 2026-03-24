@@ -1309,7 +1309,7 @@ mark{background:rgba(155,181,200,.3);border-radius:2px;color:inherit}
 
   /* Modals */
   .modal { border-radius: 20px 20px 0 0 !important; max-height: 92svh; 
-           padding: 20px 16px calc(20px + env(safe-area-inset-bottom)) !important; }
+         padding: 20px 16px calc(80px + env(safe-area-inset-bottom)) !important; }
 
   /* Profile */
   .profile-stats { flex-wrap: wrap; gap: 12px; }

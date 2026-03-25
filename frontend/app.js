@@ -1120,10 +1120,21 @@ async function openChat(username) {
 // ─── RENDER MESSAGE ────────────────────────────────────────────────
 function renderMsgHtml(m, me, isGroup=false) {
   const isMe = m.from_username===me?.username;
-  const bodyText = m.deleted
-    ? '<em style="opacity:.5;font-style:italic">Сообщение удалено</em>'
-    : escHtml(m.body);
-  const pinIcon = m.pinned ? '<span style="font-size:11px;opacity:.6;margin-right:4px">📌</span>' : '';
+
+  // Body / deleted
+  let bodyContent = '';
+  if (m.deleted) {
+    bodyContent = '<em class="msg-deleted">Сообщение удалено</em>';
+  } else {
+    if (m.image_url && (m.image_url.startsWith('data:') || m.image_url.startsWith('http'))) {
+      bodyContent += `<div class="chat-msg-image-wrap">
+        <img src="${escHtml(m.image_url)}" class="chat-msg-image" onclick="openLightbox(this.src)" loading="lazy" alt="Изображение">
+      </div>`;
+    }
+    if (m.body) bodyContent += `<span class="chat-bubble-text">${escHtml(m.body)}</span>`;
+  }
+
+  const pinIcon = m.pinned ? '<span class="msg-pin-icon">📌</span>' : '';
   const readIcon = isMe && !isGroup
     ? `<span class="read-receipt ${m.read?'read':''}">${m.read?'✓✓':'✓'}</span>` : '';
   const timeStr = new Date(m.created_at).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
@@ -1135,27 +1146,56 @@ function renderMsgHtml(m, me, isGroup=false) {
         `<button class="reaction-chip${m.my_reaction===em?' my-reaction':''}" onclick="doReact('${m.id}','${em}')">${em}<span>${cnt}</span></button>`
       ).join('')}</div>` : '';
 
-  // Quick reactions strip (shown on tap/hover)
+  // Quick reactions/actions panel (shown on tap/hover/long-press)
   const quickReacts = !m.deleted
     ? `<div class="msg-quick-react" id="qr-${m.id}">
-        ${['❤️','😂','👍','🔥','😮','😢','👎','💯'].map(em=>
-          `<button class="qr-btn" onclick="doReact('${m.id}','${em}');hideQuickReact('${m.id}')">${em}</button>`
-        ).join('')}
-        ${isMe?`<button class="qr-btn qr-del" onclick="deleteMsgById('${m.id}');hideQuickReact('${m.id}')">🗑</button>`:''}
-        <button class="qr-btn" onclick="pinMsgById('${m.id}');hideQuickReact('${m.id}')">📌</button>
-        <button class="qr-btn" onclick="replyToMsg('${m.id}','${escAttr(m.from_username)}','${escAttr(m.body.substring(0,60))}');hideQuickReact('${m.id}')">↩</button>
+        <div class="qr-emojis">
+          ${['❤️','😂','👍','🔥','😮','😢','👎','💯'].map(em=>
+            `<button class="qr-btn" onclick="doReact('${m.id}','${em}');hideQuickReact('${m.id}')">${em}</button>`
+          ).join('')}
+        </div>
+        <div class="qr-actions">
+          <button class="qr-action-btn" onclick="replyToMsg('${m.id}','${escAttr(m.from_username)}','${escAttr((m.body||'').substring(0,60))}');hideQuickReact('${m.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+            Ответить
+          </button>
+          <button class="qr-action-btn" onclick="pinMsgById('${m.id}');hideQuickReact('${m.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+            ${m.pinned ? 'Открепить' : 'Закрепить'}
+          </button>
+          <button class="qr-action-btn" onclick="forwardMsg('${m.id}','${escAttr((m.body||'').substring(0,60))}');hideQuickReact('${m.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+            Переслать
+          </button>
+          ${isMe?`<button class="qr-action-btn qr-del-btn" onclick="deleteMsgById('${m.id}');hideQuickReact('${m.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Удалить
+          </button>`:''}
+        </div>
       </div>` : '';
 
-  const ava = buildAvatar(m.from_avatar||'', m.from_username, 28);
+  const ava = buildAvatar(m.from_avatar||'', m.from_username, 30);
 
-  return `<div class="chat-row ${isMe?'chat-row-me':'chat-row-other'}" id="msg-${m.id}"
+  // Reply preview block
+  const replyBlock = (m.reply_to_body && !m.deleted)
+    ? `<div class="chat-reply-preview">
+        <div class="chat-reply-line"></div>
+        <div class="chat-reply-content">
+          <span class="chat-reply-name">${escHtml(m.reply_to_user||'')}</span>
+          <span class="chat-reply-text">${escHtml((m.reply_to_body||'').substring(0,80))}</span>
+        </div>
+      </div>` : '';
+
+  return `<div class="chat-row ${isMe?'chat-row-me':'chat-row-other'} ${m.pinned?'chat-row-pinned':''}" id="msg-${m.id}"
     onclick="toggleQuickReact('${m.id}',event)"
     oncontextmenu="toggleQuickReact('${m.id}',event);event.preventDefault()">
     ${!isMe?`<div class="chat-msg-avatar">${ava}</div>`:''}
     <div class="chat-msg-body">
       ${(!isMe&&isGroup)?`<div class="chat-sender-name">${escHtml(m.from_username)}</div>`:''}
-      ${m.reply_to_body?`<div class="chat-reply-preview"><span class="chat-reply-name">${escHtml(m.reply_to_user||'')}</span><span class="chat-reply-text">${escHtml(m.reply_to_body.substring(0,60))}</span></div>`:''}
-      <div class="chat-bubble ${isMe?'chat-bubble-me':'chat-bubble-other'}">${pinIcon}${bodyText}</div>
+      ${replyBlock}
+      <div class="chat-bubble ${isMe?'chat-bubble-me':'chat-bubble-other'} ${m.image_url&&!m.deleted?'has-image':''}">
+        ${pinIcon}${bodyContent}
+      </div>
       ${reactHtml}
       <div class="chat-time">${timeStr}${readIcon}</div>
     </div>
@@ -1270,20 +1310,32 @@ async function sendMessage(e) {
   const username=document.getElementById('chatWith').value;
   const groupId=document.getElementById('chatGroupId').value;
   const input=document.getElementById('chatInput');
-  const body=input.value.trim(); if(!body)return;
+  const body=input.value.trim();
+
+  // Require either text or image
+  if(!body && !pendingChatImage) return;
+
+  const imageToSend = pendingChatImage;
+  cancelChatImage(); // clear preview
   input.value='';
   const ep=document.getElementById('emojiPickerPanel'); if(ep)ep.style.display='none'; emojiPickerOpen=false;
 
   // Build payload
-  const payload = {body};
-  if(replyState) { payload.reply_to_id = replyState.msgId; cancelReply(); }
+  const payload = { body: body || '' };
+  if (imageToSend) payload.image_url = imageToSend;
+  if (replyState) {
+    payload.reply_to_id   = replyState.msgId;
+    payload.reply_to_body = replyState.bodyPreview;
+    payload.reply_to_user = replyState.username;
+    cancelReply();
+  }
 
   try {
     if(groupId){
-      const gr = await fetch(`${API}/groups/${groupId}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({group_id:groupId,body})});
+      const gr = await fetch(`${API}/groups/${groupId}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({group_id:groupId,...payload})});
       if(gr.ok) await loadGroupMessages(groupId,true);
     } else if(username){
-      const mr = await fetch(`${API}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({to_username:username,body})});
+      const mr = await fetch(`${API}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({to_username:username,...payload})});
       if(!mr.ok){
         const err = await mr.json().catch(()=>({}));
         showToast('Ошибка: '+(err.detail||mr.status));
@@ -1293,7 +1345,6 @@ async function sendMessage(e) {
     }
   } catch(e){ showToast('Ошибка подключения'); console.error(e); }
 
-  // Typing stop
   sendTypingStop(username||groupId);
 }
 
@@ -1324,7 +1375,57 @@ async function forwardMsg(msgId, body) {
   } catch {}
 }
 
-// Typing indicator
+// ─── CHAT PHOTO UPLOAD ─────────────────────────────────────────────
+function triggerChatPhoto() {
+  document.getElementById('chatPhotoInput')?.click();
+}
+
+function handleChatPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Validate file type
+  const allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+  if (!allowed.includes(file.type)) { showToast('Только изображения (jpg, png, gif, webp)'); return; }
+
+  // Validate size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) { showToast('Файл слишком большой (макс. 5 МБ)'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64 = e.target.result;
+    // Show preview bar above input
+    showChatImagePreview(base64, file.name);
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // reset so same file can be re-selected
+}
+
+let pendingChatImage = null; // holds base64 string before send
+
+function showChatImagePreview(base64, filename) {
+  pendingChatImage = base64;
+  let bar = document.getElementById('chatImgPreviewBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'chatImgPreviewBar';
+    bar.className = 'chat-img-preview-bar';
+    const wrap = document.querySelector('.chat-input-wrap');
+    if (wrap) wrap.prepend(bar);
+  }
+  bar.innerHTML = `
+    <div class="chat-img-preview-inner">
+      <img src="${escHtml(base64)}" class="chat-img-preview-thumb" onclick="openLightbox(this.src)">
+      <div class="chat-img-preview-name">${escHtml(filename)}</div>
+      <button class="reply-bar-close" onclick="cancelChatImage()">✕</button>
+    </div>`;
+}
+
+function cancelChatImage() {
+  pendingChatImage = null;
+  document.getElementById('chatImgPreviewBar')?.remove();
+}
+
 function sendTypingStop(target) { /* placeholder */ }
 function handleChatTyping() {
   const username = document.getElementById('chatWith')?.value;

@@ -141,6 +141,10 @@ def init_db():
         ("messages","deleted","INTEGER NOT NULL DEFAULT 0"),
         ("messages","pinned","INTEGER NOT NULL DEFAULT 0"),
         ("messages","group_id","TEXT DEFAULT NULL"),
+        ("messages","image_url","TEXT DEFAULT ''"),
+        ("messages","reply_to_id","TEXT DEFAULT NULL"),
+        ("messages","reply_to_body","TEXT DEFAULT ''"),
+        ("messages","reply_to_user","TEXT DEFAULT ''"),
     ]
     for col in migrations:
         try: cur.execute(f"ALTER TABLE {col[0]} ADD COLUMN {col[1]} {col[2]}"); conn.commit()
@@ -223,9 +227,17 @@ class CommentCreate(BaseModel):
 
 class MessageCreate(BaseModel):
     to_username: str; body: str
+    image_url: Optional[str]=""
+    reply_to_id: Optional[str]=None
+    reply_to_body: Optional[str]=""
+    reply_to_user: Optional[str]=""
 
 class GroupMessageCreate(BaseModel):
     group_id: str; body: str
+    image_url: Optional[str]=""
+    reply_to_id: Optional[str]=None
+    reply_to_body: Optional[str]=""
+    reply_to_user: Optional[str]=""
 
 class GroupCreate(BaseModel):
     name: str; member_usernames: List[str]
@@ -385,7 +397,10 @@ def send_message(data: MessageCreate, user=Depends(require_user)):
     to=cur.fetchone()
     if not to: cur.close(); conn.close(); raise HTTPException(404,"Пользователь не найден")
     mid=str(uuid.uuid4())[:8]; now=datetime.now().isoformat()
-    cur.execute("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)",(mid,user["id"],to[0],data.body,now,0,0,0,None))
+    cur.execute("""INSERT INTO messages(id,from_id,to_id,body,created_at,read,deleted,pinned,group_id,image_url,reply_to_id,reply_to_body,reply_to_user)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (mid,user["id"],to[0],data.body,now,0,0,0,None,
+         data.image_url or "",data.reply_to_id,data.reply_to_body or "",data.reply_to_user or ""))
     conn.commit(); cur.close(); conn.close()
     return {"id":mid,"ok":True}
 
@@ -416,7 +431,8 @@ def get_chat(username: str, user=Depends(require_user)):
     other=cur.fetchone()
     if not other: cur.close(); conn.close(); raise HTTPException(404,"Не найдено")
     oid=other[0]
-    cur.execute("""SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,m.read,u.username as from_username,m.deleted,m.pinned,COALESCE(u.avatar,'')
+    cur.execute("""SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,m.read,u.username as from_username,m.deleted,m.pinned,
+        COALESCE(u.avatar,''),COALESCE(m.image_url,''),COALESCE(m.reply_to_id,''),COALESCE(m.reply_to_body,''),COALESCE(m.reply_to_user,'')
         FROM messages m JOIN users u ON m.from_id=u.id
         WHERE ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) AND m.group_id IS NULL
         ORDER BY m.created_at""",(user["id"],oid,oid,user["id"]))
@@ -424,7 +440,7 @@ def get_chat(username: str, user=Depends(require_user)):
     # mark read
     cur.execute("UPDATE messages SET read=1 WHERE from_id=? AND to_id=? AND group_id IS NULL",(oid,user["id"]))
     conn.commit()
-    keys=["id","from_id","to_id","body","created_at","read","from_username","deleted","pinned","from_avatar"]
+    keys=["id","from_id","to_id","body","created_at","read","from_username","deleted","pinned","from_avatar","image_url","reply_to_id","reply_to_body","reply_to_user"]
     result=[]
     for m in msgs:
         d=dict(zip(keys,m))
@@ -533,10 +549,11 @@ def get_group_messages(group_id: str, user=Depends(require_user)):
     conn=get_db(); cur=conn.cursor()
     cur.execute("SELECT 1 FROM group_members WHERE group_id=? AND user_id=?",(group_id,user["id"]))
     if not cur.fetchone(): cur.close(); conn.close(); raise HTTPException(403,"Вы не в этой группе")
-    cur.execute("""SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,m.read,u.username,m.deleted,m.pinned,COALESCE(u.avatar,'')
+    cur.execute("""SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,m.read,u.username,m.deleted,m.pinned,
+        COALESCE(u.avatar,''),COALESCE(m.image_url,''),COALESCE(m.reply_to_id,''),COALESCE(m.reply_to_body,''),COALESCE(m.reply_to_user,'')
         FROM messages m JOIN users u ON m.from_id=u.id WHERE m.group_id=? ORDER BY m.created_at""",(group_id,))
     msgs=cur.fetchall()
-    keys=["id","from_id","to_id","body","created_at","read","from_username","deleted","pinned","from_avatar"]
+    keys=["id","from_id","to_id","body","created_at","read","from_username","deleted","pinned","from_avatar","image_url","reply_to_id","reply_to_body","reply_to_user"]
     result=[]
     for m in msgs:
         d=dict(zip(keys,m))
@@ -554,7 +571,10 @@ def send_group_message(group_id: str, data: GroupMessageCreate, user=Depends(req
     cur.execute("SELECT 1 FROM group_members WHERE group_id=? AND user_id=?",(group_id,user["id"]))
     if not cur.fetchone(): cur.close(); conn.close(); raise HTTPException(403,"Вы не в этой группе")
     mid=str(uuid.uuid4())[:8]; now=datetime.now().isoformat()
-    cur.execute("INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?)",(mid,user["id"],"group",data.body,now,0,0,0,group_id))
+    cur.execute("""INSERT INTO messages(id,from_id,to_id,body,created_at,read,deleted,pinned,group_id,image_url,reply_to_id,reply_to_body,reply_to_user)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (mid,user["id"],"group",data.body,now,0,0,0,group_id,
+         data.image_url or "",data.reply_to_id,data.reply_to_body or "",data.reply_to_user or ""))
     conn.commit(); cur.close(); conn.close()
     return {"id":mid,"ok":True}
 

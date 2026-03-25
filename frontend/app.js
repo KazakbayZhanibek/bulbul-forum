@@ -1108,13 +1108,13 @@ async function openChat(username) {
   clearInterval(chatPollInterval);
   chatPollInterval=setInterval(async ()=>{
     if(currentView==='chat'&&currentChatUser===username){
-      loadChatMessages(username,true);
+      try { await loadChatMessages(username,true); } catch {}
       try {
         const tr=await fetch(`${API}/messages/typing/${encodeURIComponent(username)}`,{headers:authHeaders()});
         if(tr.ok){ const {typing}=await tr.json(); document.getElementById('typingIndicator')?.classList.toggle('visible',typing); }
       } catch {}
     } else clearInterval(chatPollInterval);
-  },3000);
+  },4000);
 }
 
 // ─── RENDER MESSAGE ────────────────────────────────────────────────
@@ -1217,8 +1217,15 @@ async function loadChatMessages(username, silent=false) {
     const me=getUser();
     const wasAtBottom=msgs.scrollHeight-msgs.scrollTop-msgs.clientHeight<100;
 
+    // Ensure data is array
+    const messages = Array.isArray(data) ? data : (data.messages || []);
+    if(!Array.isArray(data) && !data.messages) {
+      console.error('Unexpected messages response:', data);
+      msgs.innerHTML='<p style="color:#e05a5a;padding:20px;text-align:center">Ошибка загрузки сообщений</p>';
+      return;
+    }
     // Pinned
-    const pinned=data.filter(m=>m.pinned&&!m.deleted);
+    const pinned=messages.filter(m=>m.pinned&&!m.deleted);
     const pinnedBlock=document.getElementById('pinnedMsgBlock');
     if(pinnedBlock){
       if(pinned.length){
@@ -1228,7 +1235,7 @@ async function loadChatMessages(username, silent=false) {
       } else { pinnedBlock.style.display='none'; }
     }
 
-    if(!data.length){
+    if(!messages.length){
       msgs.innerHTML=`<div class="chat-empty">
         <div style="font-size:44px;opacity:.12;margin-bottom:12px">💬</div>
         <div class="chat-empty-text">Начните разговор</div>
@@ -1238,7 +1245,7 @@ async function loadChatMessages(username, silent=false) {
     }
 
     let html=''; let lastDate='';
-    data.forEach(m=>{
+    messages.forEach(m=>{
       const d=new Date(m.created_at).toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
       if(d!==lastDate){html+=`<div class="chat-date-sep"><span>${d}</span></div>`;lastDate=d;}
       html += renderMsgHtml(m, me, false);
@@ -1273,13 +1280,18 @@ async function sendMessage(e) {
 
   try {
     if(groupId){
-      await fetch(`${API}/groups/${groupId}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({group_id:groupId,body})});
-      loadGroupMessages(groupId,true);
+      const gr = await fetch(`${API}/groups/${groupId}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({group_id:groupId,body})});
+      if(gr.ok) await loadGroupMessages(groupId,true);
     } else if(username){
-      await fetch(`${API}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({to_username:username,body})});
-      loadChatMessages(username,true);
+      const mr = await fetch(`${API}/messages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({to_username:username,body})});
+      if(!mr.ok){
+        const err = await mr.json().catch(()=>({}));
+        showToast('Ошибка: '+(err.detail||mr.status));
+        return;
+      }
+      await loadChatMessages(username,true);
     }
-  } catch {}
+  } catch(e){ showToast('Ошибка подключения'); console.error(e); }
 
   // Typing stop
   sendTypingStop(username||groupId);

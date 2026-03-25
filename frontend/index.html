@@ -185,6 +185,8 @@
           <div class="emoji-picker-grid" id="emojiPickerGrid"></div>
         </div>
         <form class="chat-input-row" onsubmit="sendMessage(event)">
+          <button type="button" class="chat-photo-btn" onclick="triggerChatPhoto()" title="Фото">📎</button>
+<input type="file" id="chatPhotoInput" accept="image/*" style="display:none" onchange="handleChatPhoto(this)">
           <button type="button" class="emoji-trigger-btn" onclick="toggleEmojiPicker()">😊</button>
           <input class="input" id="chatInput" placeholder="Напишите сообщение…" autocomplete="off"/>
           <button class="chat-send-btn" type="submit">

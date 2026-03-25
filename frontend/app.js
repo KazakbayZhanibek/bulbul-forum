@@ -1114,7 +1114,7 @@ async function openChat(username) {
         if(tr.ok){ const {typing}=await tr.json(); document.getElementById('typingIndicator')?.classList.toggle('visible',typing); }
       } catch {}
     } else clearInterval(chatPollInterval);
-  },4000);
+  },8000);
 }
 
 // ─── RENDER MESSAGE ────────────────────────────────────────────────
@@ -1292,7 +1292,6 @@ async function loadChatMessages(username, silent=false) {
     });
     msgs.innerHTML=html;
     if(!silent||wasAtBottom) msgs.scrollTop=msgs.scrollHeight;
-    clearMsgBadge(); setTimeout(checkMessages,600);
   } catch {}
 }
 
@@ -1450,7 +1449,7 @@ async function openGroupChat(groupId, groupName) {
   chatPollInterval=setInterval(()=>{
     if(currentView==='chat'&&currentGroupId===groupId) loadGroupMessages(groupId,true);
     else clearInterval(chatPollInterval);
-  },4000);
+  },8000);
 }
 
 async function loadGroupMessages(groupId, silent=false) {
